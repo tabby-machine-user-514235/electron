@@ -34,18 +34,7 @@ std::string GetPossiblyOverriddenApplicationName() {
 
 std::string GetApplicationUserAgent() {
   // Construct user agent string.
-  Browser* browser = Browser::Get();
-  std::string name, user_agent;
-  if (!base::RemoveChars(browser->GetName(), " ", &name))
-    name = browser->GetName();
-  if (name == ELECTRON_PRODUCT_NAME) {
-    user_agent = "Chrome/" CHROME_VERSION_STRING " " ELECTRON_PRODUCT_NAME
-                 "/" ELECTRON_VERSION_STRING;
-  } else {
-    user_agent = absl::StrFormat(
-        "%s/%s Chrome/%s " ELECTRON_PRODUCT_NAME "/" ELECTRON_VERSION_STRING,
-        name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
-  }
+  std::string user_agent = "Chrome/" CHROME_VERSION_STRING;
   return embedder_support::BuildUserAgentFromProduct(user_agent);
 }
 
