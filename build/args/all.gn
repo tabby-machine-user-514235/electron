@@ -75,3 +75,8 @@ enterprise_cloud_content_analysis = false
 content_enable_legacy_ipc = true
 
 clang_unsafe_buffers_paths = "//electron/electron_unsafe_buffers_paths.txt"
+
+# Force Electron to show up with Chrome branding
+is_chrome_branded = false
+use_unofficial_version_number = true
+branding_file_path = "//electron/build/config/BRANDING"

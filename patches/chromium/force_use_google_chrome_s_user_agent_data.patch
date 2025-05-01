@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tabby-machine-user-514235 <tabby-machine-user-514235@gmail.com>
+Date: Thu, 1 May 2025 00:01:46 -0700
+Subject: force use google chrome's user agent data
+
+This patch forces browser instances to use Google Chrome's user agent
+and userAgentData
+
+This patch can be removed when webContents.setUserAgent(...) also
+enables setting the navigator.userAgentData
+
+diff --git a/components/embedder_support/user_agent_utils.cc b/components/embedder_support/user_agent_utils.cc
+index 941788ea3ea81353b16537244b0632d468859f1d..2e072c8e8167c0da9b2ea88665afce0f59ff133c 100644
+--- a/components/embedder_support/user_agent_utils.cc
++++ b/components/embedder_support/user_agent_utils.cc
+@@ -206,6 +206,7 @@ const blink::UserAgentBrandList GetUserAgentBrandList(
+ #if !BUILDFLAG(CHROMIUM_BRANDING)
+   brand = version_info::GetProductName();
+ #endif
++  brand = "Google Chrome";
+ 
+   std::string brand_version =
+       output_version_type == blink::UserAgentBrandVersionType::kFullVersion
