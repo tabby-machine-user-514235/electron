@@ -70,6 +70,7 @@ export const asyncMethods = new Set([
   'capturePage',
   'loadURL',
   'executeJavaScript',
+  'executeJavaScriptInIsolatedWorld',
   'insertCSS',
   'insertText',
   'removeInsertedCSS',
