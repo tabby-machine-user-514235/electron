@@ -113,3 +113,8 @@ produce_v8_compile_hints = false
 # fix_disable_enable_resource_allowlist_generation_on_windows.patch
 # is removed.
 # enable_resource_allowlist_generation = true
+
+# Force Electron to show up with Chrome branding
+is_chrome_branded = false
+use_unofficial_version_number = true
+branding_file_path = "//electron/build/config/BRANDING"
