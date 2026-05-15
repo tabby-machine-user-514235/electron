@@ -46,6 +46,7 @@
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/input/input_constants.h"
 #include "components/input/native_web_keyboard_event.h"
+#include "components/input/render_widget_host_input_event_router.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
@@ -193,6 +194,7 @@
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/latency/latency_info.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 #include "url/url_constants.h"
@@ -4515,7 +4517,20 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       if (IsOffScreen()) {
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
       } else {
-        rwh->ForwardMouseEvent(mouse_event);
+        // Route through the InputEventRouter so that compositor-level hit
+        // testing fires. This allows the event to reach OOPIF child frames
+        // (e.g. an iframe inside a webview) instead of being swallowed by the
+        // parent renderer, which cannot forward to RemoteFrame targets.
+        auto* view_base = static_cast<content::RenderWidgetHostViewBase*>(view);
+        auto* input_router =
+            static_cast<content::WebContentsImpl*>(web_contents())
+                ->GetInputEventRouter();
+        if (input_router && view_base) {
+          input_router->RouteMouseEvent(view_base, &mouse_event,
+                                        ui::LatencyInfo());
+        } else {
+          rwh->ForwardMouseEvent(mouse_event);
+        }
       }
       return;
     }
