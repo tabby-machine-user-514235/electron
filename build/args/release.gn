@@ -17,3 +17,5 @@ is_component_ffmpeg = true
 # build/pgo_profiles/README.md.
 v8_builtins_profiling_log_file =
     "//electron/build/pgo_profiles/electron-v8-builtins.profile"
+
+symbol_level = 0 # This will strip debug symbols from Linux, so the binary can be small (70 MB)
