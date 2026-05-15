@@ -72,3 +72,8 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
+
+# Force Electron to show up with Chrome branding
+is_chrome_branded = false
+use_unofficial_version_number = true
+branding_file_path = "//electron/build/config/BRANDING"

@@ -7,3 +7,5 @@ is_official_build = true
 # who have an LGPL requirement to ship ffmpeg as a dynamically linked library,
 # we build ffmpeg as a shared library.
 is_component_ffmpeg = true
+
+symbol_level = 0 # This will strip debug symbols from Linux, so the binary can be small (70 MB)
