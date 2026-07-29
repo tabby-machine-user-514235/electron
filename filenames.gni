@@ -380,6 +380,8 @@ filenames = {
     "shell/browser/electron_browser_client.h",
     "shell/browser/electron_browser_context.cc",
     "shell/browser/electron_browser_context.h",
+    "shell/browser/electron_geolocation_context.cc",
+    "shell/browser/electron_geolocation_context.h",
     "shell/browser/electron_browser_main_parts.cc",
     "shell/browser/electron_browser_main_parts.h",
     "shell/browser/electron_crypto_module_delegate_nss.cc",

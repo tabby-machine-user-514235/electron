@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tabby-machine-user-514235 <tabby-machine-user-514235@gmail.com>
+Date: Tue, 28 Jul 2026 16:09:31 -0300
+Subject: fix: deliver position override to pending geolocation queries
+
+GeolocationImpl::SetOverride flushes a pending QueryNextPosition callback
+before installing the new override. current_result_ is always null at that
+point (it is moved out whenever a position is reported), so the flush
+synthesizes a POSITION_UNAVAILABLE error. With an open watchPosition the
+frame always has a pending query, so every re-applied
+Emulation.setGeolocationOverride surfaces a spurious error-code-2 to the
+page, killing any getCurrentPosition({maximumAge: 0}) waiting on the same
+frame's shared mojo pipe.
+
+Flush with the incoming override result instead: the pending query receives
+the position (or the intentional error override) directly, and re-applying
+the override on an interval behaves like a real location provider. When the
+flush delivered the result, the trailing OnLocationUpdate is skipped so the
+client's re-armed query does not consume a cached copy of the same result
+and observe it twice (identical timestamp, ~1ms apart) per application;
+when there was no pending query (e.g. at BindGeolocation time) the result
+is cached exactly as before.
+
+This is a general Chromium bug, not an Electron-specific change; it should
+be upstreamed. The patch can be dropped once upstream
+services/device/geolocation/geolocation_impl.cc no longer synthesizes
+kPositionUnavailable in SetOverride when current_result_ is null.
+
+diff --git a/services/device/geolocation/geolocation_impl.cc b/services/device/geolocation/geolocation_impl.cc
+index bf60741c22d58f6f0a97e892447ecfd9465a058d..110f1f67970c8d014f18c6cbcf8c9920d31831d9 100644
+--- a/services/device/geolocation/geolocation_impl.cc
++++ b/services/device/geolocation/geolocation_impl.cc
+@@ -140,12 +140,14 @@ void GeolocationImpl::QueryCachedPosition(
+ }
+ 
+ void GeolocationImpl::SetOverride(const mojom::GeopositionResult& result) {
++  bool flushed_incoming_result = false;
+   if (!position_callback_.is_null()) {
+     if (!current_result_) {
+-      current_result_ =
+-          mojom::GeopositionResult::NewError(mojom::GeopositionError::New(
+-              mojom::GeopositionErrorCode::kPositionUnavailable,
+-              /*error_message=*/"", /*error_technical=*/""));
++      // Flush the pending query with the incoming override instead of a
++      // synthesized POSITION_UNAVAILABLE, so re-applying a position override
++      // never surfaces a spurious error to a waiting watcher or one-shot.
++      current_result_ = result.Clone();
++      flushed_incoming_result = true;
+     }
+     ReportCurrentPosition();
+   }
+@@ -158,7 +160,12 @@ void GeolocationImpl::SetOverride(const mojom::GeopositionResult& result) {
+ 
+   geolocation_subscription_ = {};
+ 
+-  OnLocationUpdate(*position_override_);
++  // When the flush above already delivered this result, don't also cache it:
++  // the client's re-armed query would consume the cached copy and observe the
++  // same position twice (same timestamp, ~1ms apart) per override application.
++  if (!flushed_incoming_result) {
++    OnLocationUpdate(*position_override_);
++  }
+ }
+ 
+ void GeolocationImpl::ClearOverride() {

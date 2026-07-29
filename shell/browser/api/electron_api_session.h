@@ -207,6 +207,7 @@ class Session final : public gin::Wrappable<Session>,
  private:
   void SetDisplayMediaRequestHandler(v8::Isolate* isolate,
                                      v8::Local<v8::Value> val);
+  void SetGeolocationProvider(v8::Isolate* isolate, v8::Local<v8::Value> val);
 
   cppgc::Member<api::Cookies> cookies_;
   cppgc::Member<api::Extensions> extensions_;

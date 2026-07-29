@@ -1021,6 +1021,49 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 > [!NOTE]
 > `isMainFrame` will always be `false` for a `fileSystem` request as a result of Chromium limitations.
 
+#### `ses.setGeolocationProvider(provider)`
+
+* `provider` Function | null
+  * `details` Object
+    * `webContents` [WebContents](web-contents.md) - The contents requesting the position.
+    * `origin` String - The serialized top-level origin.
+    * `enableHighAccuracy` Boolean - Whether the effective request permits high accuracy.
+  * `callback` Function
+    * `error` Error | String | null (optional) - A provider error. Errors are exposed to the page as `POSITION_UNAVAILABLE`.
+    * `position` Object (optional)
+      * `latitude` Number
+      * `longitude` Number
+      * `accuracy` Number - A non-negative horizontal accuracy in metres.
+      * `altitude` Number (optional)
+      * `altitudeAccuracy` Number (optional)
+      * `heading` Number (optional)
+      * `speed` Number (optional)
+      * `timestamp` Number (optional) - Unix time in milliseconds. Defaults to the current time.
+
+Sets a per-session provider for the web [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API).
+The provider is called whenever Chromium needs its next position fix. Chromium continues to manage
+permissions, secure-context checks, `timeout`, `maximumAge`, watches, and DevTools geolocation overrides.
+Only the first callback result is used; invalid positions and provider errors become `POSITION_UNAVAILABLE`.
+
+Pass `null` to restore Chromium's default provider. Network requests made by a provider are not
+implicitly associated with this session; use `ses.fetch()` when the request should use the session's
+proxy configuration.
+
+```js
+const { session } = require('electron')
+const ses = session.fromPartition('persist:example')
+
+ses.setGeolocationProvider(async (details, callback) => {
+  try {
+    const response = await ses.fetch('https://geoip.example.test/json')
+    const position = await response.json()
+    callback(null, { ...position, accuracy: 20, timestamp: Date.now() })
+  } catch (error) {
+    callback(error.message)
+  }
+})
+```
+
 #### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
 * `handler` Function | null

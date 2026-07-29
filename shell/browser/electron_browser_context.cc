@@ -712,6 +712,18 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
   display_media_request_handler_ = handler;
 }
 
+void ElectronBrowserContext::SetGeolocationProvider(
+    GeolocationProviderHandler provider) {
+  geolocation_provider_ = std::move(provider);
+  geolocation_provider_changed_callbacks_.Notify();
+}
+
+base::CallbackListSubscription
+ElectronBrowserContext::AddGeolocationProviderChangedCallback(
+    base::RepeatingClosure callback) {
+  return geolocation_provider_changed_callbacks_.Add(std::move(callback));
+}
+
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,

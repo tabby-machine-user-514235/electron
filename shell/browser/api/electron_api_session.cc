@@ -48,6 +48,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
+#include "gin/data_object_builder.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
@@ -128,6 +129,35 @@ using content::BrowsingDataRemover;
 using content::StoragePartition;
 
 namespace {
+
+void InvokeGeolocationProvider(
+    v8::Isolate* isolate,
+    const gin_helper::SafeV8Function& function,
+    content::WebContents* web_contents,
+    std::string origin,
+    bool enable_high_accuracy,
+    electron::GeolocationResponseCallback callback) {
+  gin_helper::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  if (!function.IsAlive())
+    return;
+  v8::Local<v8::Function> provider = function.NewHandle(isolate);
+  v8::Local<v8::Context> context =
+      provider->GetCreationContextChecked(isolate);
+  v8::Context::Scope context_scope(context);
+  v8::MicrotasksScope microtasks_scope(context,
+                                       v8::MicrotasksScope::kRunMicrotasks);
+  v8::Local<v8::Object> details =
+      gin::DataObjectBuilder(isolate)
+          .Set("webContents", web_contents)
+          .Set("origin", origin)
+          .Set("enableHighAccuracy", enable_high_accuracy)
+          .Build();
+  v8::Local<v8::Value> callback_value =
+      gin::ConvertToV8(isolate, std::move(callback));
+  v8::Local<v8::Value> args[] = {details, callback_value};
+  provider->Call(context, provider, std::size(args), args).IsEmpty();
+}
 
 struct ClearStorageDataOptions {
   blink::StorageKey storage_key;
@@ -935,6 +965,22 @@ void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
     return;
   }
   browser_context_->SetDisplayMediaRequestHandler(handler);
+}
+
+void Session::SetGeolocationProvider(v8::Isolate* isolate,
+                                     v8::Local<v8::Value> val) {
+  if (val->IsNull()) {
+    browser_context_->SetGeolocationProvider(GeolocationProviderHandler());
+    return;
+  }
+  if (!val->IsFunction()) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Geolocation provider must be null or a function");
+    return;
+  }
+  browser_context_->SetGeolocationProvider(base::BindRepeating(
+      &InvokeGeolocationProvider, isolate,
+      gin_helper::SafeV8Function(isolate, val)));
 }
 
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
@@ -1798,6 +1844,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetPermissionCheckHandler)
       .SetMethod("_setDisplayMediaRequestHandler",
                  &Session::SetDisplayMediaRequestHandler)
+      .SetMethod("setGeolocationProvider", &Session::SetGeolocationProvider)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
       .SetMethod("setUSBProtectedClassesHandler",

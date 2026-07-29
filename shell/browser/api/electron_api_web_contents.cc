@@ -108,6 +108,7 @@
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/electron_geolocation_context.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
@@ -4374,6 +4375,15 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
 void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
                                       const gfx::Size& pref_size) {
   Emit("preferred-size-changed", pref_size);
+}
+
+device::mojom::GeolocationContext* WebContents::GetGeolocationContext() {
+  ElectronBrowserContext* browser_context = GetBrowserContext();
+  if (!geolocation_context_) {
+    geolocation_context_ = std::make_unique<ElectronGeolocationContext>(
+        web_contents(), browser_context);
+  }
+  return geolocation_context_.get();
 }
 
 bool WebContents::CanOverscrollContent() {
