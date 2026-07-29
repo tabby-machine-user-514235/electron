@@ -12,8 +12,10 @@
 #include <variant>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
+#include "base/values.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -29,6 +31,7 @@ class ValueMapPrefStore;
 namespace content {
 class PreconnectManager;
 class ReconnectableURLLoaderFactory;
+class WebContents;
 }  // namespace content
 
 namespace gin {
@@ -60,6 +63,14 @@ using DisplayMediaResponseCallbackJs =
 using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  DisplayMediaResponseCallbackJs)>;
+
+using GeolocationResponseCallback =
+    base::OnceCallback<void(gin::Arguments* args)>;
+using GeolocationProviderHandler =
+    base::RepeatingCallback<void(content::WebContents* web_contents,
+                                 std::string origin,
+                                 bool enable_high_accuracy,
+                                 GeolocationResponseCallback callback)>;
 class ElectronBrowserContext : public content::BrowserContext {
  public:
   // disable copy
@@ -164,6 +175,12 @@ class ElectronBrowserContext : public content::BrowserContext {
   bool ChooseDisplayMediaDevice(const content::MediaStreamRequest& request,
                                 content::MediaResponseCallback callback);
   void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
+  void SetGeolocationProvider(GeolocationProviderHandler provider);
+  const GeolocationProviderHandler& geolocation_provider() const {
+    return geolocation_provider_;
+  }
+  base::CallbackListSubscription AddGeolocationProviderChangedCallback(
+      base::RepeatingClosure callback);
 
   ~ElectronBrowserContext() override;
 
@@ -244,6 +261,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
   DisplayMediaRequestHandler display_media_request_handler_;
+  GeolocationProviderHandler geolocation_provider_;
+  base::RepeatingClosureList geolocation_provider_changed_callbacks_;
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;

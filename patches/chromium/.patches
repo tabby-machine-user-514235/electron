@@ -238,3 +238,5 @@ fix_guard_devtools_fetch_resume_and_body_collection.patch
 cherry-pick-861cb7cc1d51.patch
 cherry-pick-6e7047bfc51a.patch
 force_use_google_chrome_s_user_agent_data.patch
+fix_deliver_position_override_to_pending_geolocation_queries.patch
+feat_add_webcontents_geolocation_context_override.patch

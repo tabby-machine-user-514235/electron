@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: tabby-machine-user-514235 <lucasterra7+machine-user@gmail.com>
+Date: Wed, 29 Jul 2026 17:45:06 -0300
+Subject: feat: add WebContents geolocation context override
+
+Electron needs a per-WebContents geolocation context to provide a session-scoped JavaScript location provider. A process-global LocationProvider cannot preserve session isolation or identify the requesting WebContents.
+
+This is an Electron-specific functional extension, but the generic delegate hook is intentionally neutral and should be proposed upstream.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 4e4c2ff6427a5a2d501494230bfbaff1c70a96fb..d65fc54eda42f2736638d54d94c84e67e8ec7049 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -6368,10 +6368,8 @@ void WebContentsImpl::UnrecoverableAccessibilityError() {
+ device::mojom::GeolocationContext* WebContentsImpl::GetGeolocationContext() {
+   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::GetGeolocationContext");
+   if (delegate_) {
+-    auto* installed_webapp_context =
+-        delegate_->GetInstalledWebappGeolocationContext();
+-    if (installed_webapp_context) {
+-      return installed_webapp_context;
++    if (auto* context = delegate_->GetGeolocationContext()) {
++      return context;
+     }
+   }
+ 
+diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
+index f2baf5dfd16fd350a0057955b882ab3899d085fd..a7666e322f72b6a5c74ef60d685b07cb2b11c859 100644
+--- a/content/public/browser/web_contents_delegate.cc
++++ b/content/public/browser/web_contents_delegate.cc
+@@ -465,6 +465,11 @@ bool WebContentsDelegate::ShouldShowStaleContentOnEviction(
+   return false;
+ }
+ 
++device::mojom::GeolocationContext*
++WebContentsDelegate::GetGeolocationContext() {
++  return GetInstalledWebappGeolocationContext();
++}
++
+ device::mojom::GeolocationContext*
+ WebContentsDelegate::GetInstalledWebappGeolocationContext() {
+   return nullptr;
+diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
+index 0a1f1b470141c5f4dde4e808373d540fba78aa17..67de3ae3af9625d5eecbc553dc433cbf0cbb223c 100644
+--- a/content/public/browser/web_contents_delegate.h
++++ b/content/public/browser/web_contents_delegate.h
+@@ -864,9 +864,15 @@ class CONTENT_EXPORT WebContentsDelegate {
+   // solid color is displayed instead.
+   virtual bool ShouldShowStaleContentOnEviction(WebContents* source);
+ 
+-  // Returns a  InstalledWebappGeolocationContext if this web content is running
+-  // in a installed webapp and geolocation should be deleagted from the
+-  // installed webapp; otherwise returns nullptr.
++  // Returns an embedder supplied geolocation context for this WebContents, or
++  // nullptr to use the device service's default context. This is deliberately
++  // a context-level override: it preserves Blink's request multiplexing,
++  // caching, permission and DevTools behaviour.
++  virtual device::mojom::GeolocationContext*
++  GetGeolocationContext();
++
++  // Returns an InstalledWebappGeolocationContext if this web content is
++  // running in an installed web app; otherwise returns nullptr.
+   virtual device::mojom::GeolocationContext*
+   GetInstalledWebappGeolocationContext();
+ 

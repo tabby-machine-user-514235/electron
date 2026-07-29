@@ -83,6 +83,11 @@ N.B. You will need to add a
 [Billing Account](https://cloud.google.com/billing/docs/how-to/payment-methods#add_a_payment_method)
 to the project associated to the API key for the geolocation webservice to work.
 
+As an alternative, an application can set a per-session JavaScript geolocation
+provider with [`session.setGeolocationProvider`](session.md#sessetgeolocationproviderprovider).
+This does not deprecate `GOOGLE_API_KEY`; it only avoids Chromium's default
+network provider for sessions that install a custom provider.
+
 ### `ELECTRON_NO_ASAR`
 
 Disables ASAR support. This variable is only supported in forked child processes

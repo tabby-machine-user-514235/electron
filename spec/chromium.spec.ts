@@ -1259,6 +1259,44 @@ describe('chromium features', () => {
   });
 
   describe('navigator.geolocation', () => {
+    it('uses a session geolocation provider', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: 'geolocation-provider-spec' }
+      });
+      const ses = w.webContents.session;
+      ses.setPermissionRequestHandler((_wc, permission, callback) => {
+        callback(permission === 'geolocation');
+      });
+      let calls = 0;
+      ses.setGeolocationProvider((details, callback) => {
+        calls++;
+        expect(details.webContents).toBe(w.webContents);
+        expect(details.origin).toMatch(/^file:\/\//);
+        callback(null, {
+          latitude: 51.5072,
+          longitude: -0.1276,
+          accuracy: 12,
+          altitude: 35,
+          altitudeAccuracy: 4,
+          heading: 90,
+          speed: 2,
+          timestamp: 1234
+        });
+      });
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const position = await w.webContents.executeJavaScript(`new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(
+          value => resolve({ coords: value.coords, timestamp: value.timestamp }),
+          reject,
+          { maximumAge: 0 }))`);
+      expect(position.coords.latitude).toBe(51.5072);
+      expect(position.coords.altitude).toBe(35);
+      expect(position.timestamp).toBe(1234);
+      expect(calls).toBe(1);
+      ses.setGeolocationProvider(null);
+    });
+
     it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,

@@ -10,7 +10,7 @@ This patch can be removed when webContents.setUserAgent(...) also
 enables setting the navigator.userAgentData
 
 diff --git a/components/embedder_support/user_agent_utils.cc b/components/embedder_support/user_agent_utils.cc
-index 557eadb18229e4adb2f0092593877254e2f1fe7c..9e6ab894e5940f7ebea265e6672d4b53396c7f72 100644
+index 608bea5cb386438757146a531bbc0293b3eb9775..d6ac51ffa473fd1126dbcec7c1024acb47ebb4ac 100644
 --- a/components/embedder_support/user_agent_utils.cc
 +++ b/components/embedder_support/user_agent_utils.cc
 @@ -166,6 +166,7 @@ const blink::UserAgentBrandList GetUserAgentBrandList(

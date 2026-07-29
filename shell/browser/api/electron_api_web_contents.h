@@ -78,6 +78,10 @@ class DevToolsAgentHost;
 class WebContents;
 }  // namespace content
 
+namespace device::mojom {
+class GeolocationContext;
+}
+
 namespace gin {
 class Arguments;
 }
@@ -111,6 +115,7 @@ namespace electron {
 class DevToolsContextMenu;
 class DraggableRegionDebugger;
 class ElectronBrowserContext;
+class ElectronGeolocationContext;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
@@ -792,6 +797,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // content::WebContentsDelegate:
   bool CanOverscrollContent() override;
+  device::mojom::GeolocationContext* GetGeolocationContext() override;
   std::unique_ptr<content::EyeDropper> OpenEyeDropper(
       content::RenderFrameHost* frame,
       content::EyeDropperListener* listener) override;
@@ -896,6 +902,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
+  std::unique_ptr<ElectronGeolocationContext> geolocation_context_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ScriptExecutor> script_executor_;
